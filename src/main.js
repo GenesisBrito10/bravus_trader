@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
-
+import axios from 'axios'
 // Importação de estilos
 import './index.css'
 import '@fortawesome/fontawesome-free/css/all.min.css'
@@ -11,7 +11,7 @@ import VueSweetalert2 from 'vue-sweetalert2'
 import 'sweetalert2/dist/sweetalert2.min.css'
 
 const app = createApp(App)
-
+axios.defaults.baseURL = 'https://api-polarium.gbetss.com.br'
 // Configurar Sweetalert2
 const options = {
     confirmButtonColor: '#2596BE',
