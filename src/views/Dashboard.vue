@@ -899,7 +899,7 @@ const buyDigital = async ({ assetName, operationValue, direction, account_type }
  * @param {number} orderId - The order ID to check.
  * @returns {Promise<Object>} The response data from the API.
  */
-const checkOrderStatus = async (orderId) => {
+const checkOrderStatus = async (orderId,uniqueId) => {
   const email = localStorage.getItem('userEmail')
   const password = localStorage.getItem('userPassword')
 
@@ -918,7 +918,7 @@ const checkOrderStatus = async (orderId) => {
     const { data } = await axios.get(
       '/api/order',
       {
-        params: { email, password, orderId: numericOrderId }
+        params: { email, password, orderId: numericOrderId,uniqueId }
       }
     )
     return data
@@ -1080,6 +1080,12 @@ onMounted(async () => {
   })
 
   socket.on('trade', async (data) => {
+    // Só executa operações se o bot estiver ativo
+    if (!isActive.value) {
+      console.log('Bot está inativo, operação ignorada.')
+      return
+    }
+
     console.log('Nova transação recebida:', data)
     if (!data) {
       console.error('Dados inválidos recebidos no webhook:', data)
@@ -1099,6 +1105,7 @@ onMounted(async () => {
       return
     }
     if (balance.value <= 0) {
+      toggleStatus()
       console.error('Saldo insuficiente para realizar operações.')
       return
     }
@@ -1107,8 +1114,10 @@ onMounted(async () => {
     const maxAttempts = GALES.value + 1
     let operationValue = Math.max(1, Math.floor(balance.value * 0.1))
     let orderId = null
+    let forError = false
     await updateBalance()
-
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    console.log('ID único para esta operação:', uniqueId)
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
@@ -1122,48 +1131,49 @@ onMounted(async () => {
         console.log('Ordem executada:', orderId)
         if (!orderId || !orderId.order || !orderId.order.id) {
           console.error('Erro ao executar ordem:', orderId.message)
+          forError = true
           break
         }
 
-        const orderStatus = await checkOrderStatus(orderId.order.id)
+        const orderStatus = await checkOrderStatus(orderId.order.id,uniqueId)
         console.log('Status da ordem verificado:', orderStatus)
 
         if (!orderStatus || !orderStatus.status) {
           console.error('Erro ao verificar status da ordem:', orderStatus)
+          forError = true
           break
         }
 
         console.log(`Resultado PnL: ${orderStatus.pnl}`)
 
         if (orderStatus.pnl >= 0) {
-
           console.log('Operação bem-sucedida, não serão mais tentativas.')
           break
         }
 
         if (attempt < maxAttempts) {
           operationValue *= 2
-          const historyData = await getHistory()
-          history.value.push(
-            historyData.find(item => item.orderId === orderId.order.id) || {}
-          )
+         
         } else {
           console.log('Máximo de tentativas alcançado.')
         }
 
       } catch (err) {
         console.error('Erro durante a tentativa:', err)
+        forError = true
         break
       }
     }
-    await new Promise(resolve => setTimeout(resolve, 1500))
 
-    const historyData = await getHistory()
-    history.value.push(
-      historyData.find(item => item.orderId === orderId.order.id) || {}
-    )
-    await updateBalance()
-
+    // Só executa o código abaixo se não houve erro no for
+    if (!forError) {
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      const historyData = await getHistory()
+      history.value.push(
+        historyData.find(item => item.orderId === orderId.order.id) || {}
+      )
+      await updateBalance()
+    }
   })
 
 
