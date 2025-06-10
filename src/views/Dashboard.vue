@@ -852,7 +852,9 @@ const startSdk = async () => {
       console.error('Failed to start SDK:', error)
     }
   } else {
-    console.warn('No user credentials found in localStorage.')
+    // Se não houver credenciais, redireciona para o login
+    router.push( '/login')
+    console.warn('No user credentials found in localStorage. Redirecting to login.')
   }
 }
 
