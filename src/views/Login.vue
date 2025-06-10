@@ -155,33 +155,48 @@
       }
     })
   }
+
+  
   
   const handleLogin = async (event) => {
     event.preventDefault()
-    
+
     try {
       isLoading.value = true
-      /* const response = await axios.post('/api/login', {
-        email: email.value,
-        password: password.value
-      }) */
-  
+
+      // Save credentials to localStorage
       localStorage.setItem('userEmail', email.value)
       localStorage.setItem('userPassword', password.value)
-      //localStorage.setItem('accessToken', response.data.accessToken)
-      
-      showToast(t.value.loginSuccess)
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 1000)
+
+      // Try to start SDK (login)
+      const response = await axios.post('/api/sdk/start', {
+        email: email.value,
+        password: password.value
+      }, {
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      if (response.status === 200) {
+        showToast(t.value.loginSuccess)
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 1000)
+      } else {
+        showToast(t.value.loginError, true)
+      }
     } catch (error) {
       console.error('Login error:', error)
-      showToast(error.response?.data?.error || t.value.loginError, true)
+      // Check for array of messages in error response
+      const messages = error.response?.data?.message
+      if (Array.isArray(messages) && messages.length > 0) {
+        messages.forEach(msg => showToast(msg, true))
+      } else {
+        showToast(error.response?.data?.error || t.value.loginError, true)
+      }
     } finally {
       isLoading.value = false
     }
   }
-  
   
   /* document.addEventListener("contextmenu", function (e) {
     e.preventDefault();
