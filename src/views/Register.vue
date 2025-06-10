@@ -251,22 +251,33 @@
   
     try {
       isLoading.value = true
-      const response = await axios.post('/api/register', {
-        firstName: firstName.value,
-        lastName: lastName.value,
-        country: country.value,
-        email: email.value,
-        password: password.value,
-        phoneNumber: phoneCode.value + phoneNumber.value
-      })
-  
-      showToast(t.value.accountCreated)
-      setTimeout(() => {
-        router.push('/login')
-      }, 1000)
+      const response = await axios.post(
+        'https://api.trade.polariumbroker.com/v3/users/register',
+        {
+          identifier: email.value,
+          password: password.value,
+          accepted: ['terms', 'privacy policy'],
+          country_id: 30, 
+          first_name: firstName.value,
+          last_name: lastName.value,
+          timezone: 'America/Sao_Paulo'
+        },
+        {
+          headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json'
+          }
+        }
+      )
+
+      if (response.status === 200) {
+        showToast(t.value.accountCreated)
+        setTimeout(() => {
+          router.push('/login')
+        }, 1000)
+      }
     } catch (error) {
-      console.error('Register error:', error)
-      showToast(error.response?.data?.error || t.value.errorCreating, true)
+      showToast(t.value.registrationFailed || 'Registration failed', true)
     } finally {
       isLoading.value = false
     }
