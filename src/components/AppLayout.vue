@@ -128,7 +128,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import logoUrl from '../assets/logo.png'
 import { translations } from '@/locales'
-
+import axios from 'axios'
 const router = useRouter()
 const isSidebarOpen = ref(false)
 
@@ -136,7 +136,19 @@ const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
 }
 
-const logout = () => {
+const logout = async () => {
+  const email = localStorage.getItem('userEmail')
+  if (email) {
+    try {
+      await axios.delete('/api/sdk/stop', {
+        data: { email:email },
+        headers: { 'Content-Type': 'application/json' }
+      })
+      console.log('SDK stopped successfully.')
+    } catch (error) {
+      console.error('Failed to stop SDK:', error)
+    }
+  }
   localStorage.clear()
   router.push('/login')
 }
