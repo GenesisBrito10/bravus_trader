@@ -1120,6 +1120,10 @@ onMounted(async () => {
           account_type: accountType.value
         })
         console.log('Ordem executada:', orderId)
+        if (!orderId || !orderId.order || !orderId.order.id) {
+          console.error('Erro ao executar ordem:', orderId.message)
+          break
+        }
 
         const orderStatus = await checkOrderStatus(orderId.order.id)
         console.log('Status da ordem verificado:', orderStatus)
